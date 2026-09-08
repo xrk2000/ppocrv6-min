@@ -11,6 +11,7 @@ import numpy as np
 
 from .det import DetModel
 from .io import imread_unicode
+from .paths import default_det_dir, default_rec_dir
 from .rec import RecModel
 
 
@@ -69,9 +70,12 @@ class OCR:
         providers: onnxruntime providers passed to both models.
     """
 
-    def __init__(self, det_dir: str, rec_dir: str, box_thresh: float = 0.4,
+    def __init__(self, det_dir: "str | None" = None,
+                 rec_dir: "str | None" = None, box_thresh: float = 0.4,
                  limit_side_len: int = 960, use_det: bool = True,
                  providers=None):
+        det_dir = det_dir or default_det_dir()
+        rec_dir = rec_dir or default_rec_dir()
         self.det = DetModel(det_dir, limit_side_len=limit_side_len,
                             box_thresh=box_thresh, providers=providers) \
             if use_det else None

@@ -10,35 +10,26 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 
 from . import __version__
+from .paths import default_det_dir, default_rec_dir
 from .pipeline import OCR
 
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="ppocrv6-min",
-        description="Minimal PP-OCRv6 OCR (det + rec) on ONNX Runtime.")
+        description="Minimal PP-OCRv6 OCR (det + rec) on ONNX Runtime. "
+                    "Bundled tiny models are used by default.")
     p.add_argument("images", nargs="+", help="image file(s) to OCR")
-    p.add_argument("--det-dir",
-                   default=os.environ.get(
-                       "PPOCR_DET_DIR",
-                       os.path.join(os.path.expanduser("~"),
-                                    "models", "PP-OCRv6",
-                                    "PP-OCRv6_tiny_det_onnx")),
+    p.add_argument("--det-dir", default=default_det_dir(),
                    help="directory of the *_det_onnx model "
-                        "(env PPOCR_DET_DIR)")
-    p.add_argument("--rec-dir",
-                   default=os.environ.get(
-                       "PPOCR_REC_DIR",
-                       os.path.join(os.path.expanduser("~"),
-                                    "models", "PP-OCRv6",
-                                    "PP-OCRv6_tiny_rec_onnx")),
+                        "(default: bundled tiny det, env PPOCR_DET_DIR)")
+    p.add_argument("--rec-dir", default=default_rec_dir(),
                    help="directory of the *_rec_onnx model "
-                        "(env PPOCR_REC_DIR)")
+                        "(default: bundled tiny rec, env PPOCR_REC_DIR)")
     p.add_argument("--no-det", action="store_true",
                    help="skip detection; feed the whole image to the recognizer")
     p.add_argument("--box-thresh", type=float, default=0.4,

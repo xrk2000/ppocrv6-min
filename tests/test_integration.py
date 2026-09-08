@@ -4,10 +4,34 @@ import numpy as np
 import cv2
 
 from conftest import DET_DIR, REC_DIR, IMAGE, _need_det, _need_rec, _need_image
+import ppocrv6_min
 from ppocrv6_min.det import DetModel
 from ppocrv6_min.rec import RecModel
 from ppocrv6_min.io import imread_unicode
 from ppocrv6_min.pipeline import OCR
+
+
+def test_bundled_models_present():
+    """The tiny det/rec models must ship inside the package."""
+    assert ppocrv6_min.bundled_available()
+    assert ppocrv6_min.BUNDLED_DET_DIR == DET_DIR
+    assert ppocrv6_min.BUNDLED_REC_DIR == REC_DIR
+
+
+def test_ocr_defaults_to_bundled():
+    """OCR() with no args should load the bundled tiny models and run.
+
+    use_det=False feeds the whole image to the recognizer, which keeps the
+    test focused on model resolution rather than detection of the small
+    synthetic line.
+    """
+    text = "PP-OCRv6 tiny rec 2026"
+    img = np.full((60, 520, 3), 255, np.uint8)
+    cv2.putText(img, text, (20, 42), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 0, 0), 2)
+    ocr = ppocrv6_min.OCR(use_det=False)
+    items = ocr.predict(img)
+    assert len(items) == 1
+    assert "2026" in items[0].text
 
 
 @_need_rec()

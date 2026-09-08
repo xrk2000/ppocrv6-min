@@ -44,22 +44,24 @@ pip install -e .[test]   # 开发 + 测试
 
 ## 模型
 
-从 HuggingFace `PaddlePaddle` 组织下载两个 ONNX 目录（各含
-`inference.onnx` + `inference.yml`，rec 的 yml 含字符字典，**必须保留**）：
+**`tiny` 档模型已随包内置**（det ~1.7 MB + rec ~4.4 MB，位于
+`src/ppocrv6_min/models/`），`pip install` 之后**开箱即用，无需下载任何权重**。
+
+来源（Apache-2.0，如需换档位从这里下载）：
 
 - [PP-OCRv6_tiny_det_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_onnx)
 - [PP-OCRv6_tiny_rec_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_rec_onnx)
 
-默认查找 `~/models/PP-OCRv6/...`，可用环境变量或参数覆盖：
+默认使用内置模型；要换 small/medium 档位（18710 类，字典在各自
+`inference.yml`，接口不变）时，用参数或环境变量指向：
 
 ```bash
-export PPOCR_DET_DIR=/path/to/PP-OCRv6_tiny_det_onnx
-export PPOCR_REC_DIR=/path/to/PP-OCRv6_tiny_rec_onnx
+export PPOCR_DET_DIR=/path/to/PP-OCRv6_small_det_onnx
+export PPOCR_REC_DIR=/path/to/PP-OCRv6_small_rec_onnx
 ```
 
-> 目录里的 `inference.json` 是 Paddle PIR 格式权重，onnxruntime 用不到，可忽略。
-> 换 medium/small 档位只需把 `det_dir`/`rec_dir` 指到对应目录（medium/small
-> 为 18710 类，字典在各自 `inference.yml`，接口不变）。
+> 模型目录里的 `inference.json` 是 Paddle PIR 格式权重，onnxruntime 用不到，
+> 未打包。rec 的 `inference.yml` 含字符字典，**必须保留**（已打包）。
 
 ## 用法
 
@@ -68,10 +70,7 @@ export PPOCR_REC_DIR=/path/to/PP-OCRv6_tiny_rec_onnx
 ```python
 from ppocrv6_min import OCR
 
-ocr = OCR("models/PP-OCRv6_tiny_det_onnx",
-          "models/PP-OCRv6_tiny_rec_onnx",
-          box_thresh=0.4)
-
+ocr = OCR()            # 默认用内置 tiny det + rec
 items = ocr.predict("截图.png")        # 路径或 BGR ndarray 均可
 for it in items:
     print(it.box, f"{it.score:.3f}", it.text)
@@ -121,18 +120,22 @@ PPOCR_TEST_DET_DIR=... PPOCR_TEST_REC_DIR=... PPOCR_TEST_IMAGE=... pytest
 
 ```
 ppocrv6-min/
-├── pyproject.toml            # 打包 + 依赖 + CLI 入口
+├── pyproject.toml            # 打包 + 依赖 + 包数据(内置模型) + CLI 入口
 ├── src/ppocrv6_min/
-│   ├── __init__.py           # 导出 OCR / DetModel / RecModel
+│   ├── __init__.py           # 导出 OCR / DetModel / RecModel / 路径常量
 │   ├── io.py                 # 中文路径安全的 imread/imwrite
+│   ├── paths.py              # 内置模型目录解析（env 覆盖）
 │   ├── det.py                # DB 检测（官方后处理 + pyclipper unclip）
 │   ├── rec.py                # CTC 识别（字典解析 + 预处理 + 解码）
 │   ├── pipeline.py           # OCR = det → warp → rec
-│   └── cli.py                # ppocrv6-min 命令行
+│   ├── cli.py                # ppocrv6-min 命令行
+│   └── models/               # ★ 内置 tiny 模型（随 pip 分发）
+│       ├── PP-OCRv6_tiny_det_onnx/   inference.onnx + inference.yml
+│       └── PP-OCRv6_tiny_rec_onnx/   inference.onnx + inference.yml
 ├── tests/
 │   ├── conftest.py           # 模型路径定位 + skip 逻辑
 │   ├── test_units.py         # 无模型依赖的单测
-│   └── test_integration.py   # 真实模型端到端（缺模型自动 skip）
+│   └── test_integration.py   # 内置模型端到端（可 skip）
 ├── README.md
 └── LICENSE                   # Apache-2.0
 ```

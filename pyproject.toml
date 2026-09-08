@@ -34,5 +34,8 @@ ppocrv6-min = "ppocrv6_min.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+ppocrv6_min = ["models/**/*.onnx", "models/**/*.yml", "models/**/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -25,13 +25,17 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Model weights (large; download separately)
-*.onnx
-*.pt
-*.paddle
-models/
-PP-OCRv6*/
+# Local model weights (large; download separately) — but NOT the tiny models
+# bundled inside the package (see exception below).
+/*.onnx
+/*.pt
+/*.paddle
+/models/
+/PP-OCRv6*/
+# keep the bundled tiny det/rec models in the repo
+!src/ppocrv6_min/models/
+!src/ppocrv6_min/models/**/
 
 # OCR outputs
-output/
-out.json
+/output/
+/out.json

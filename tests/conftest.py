@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Test configuration: locate the local PP-OCRv6 ONNX models.
+"""Test configuration.
 
-Override with env vars if your models live elsewhere:
+The tiny det/rec models are bundled in the package, so integration tests run
+by default. Override with env vars to point at other models/images:
   PPOCR_TEST_DET_DIR, PPOCR_TEST_REC_DIR, PPOCR_TEST_IMAGE
-Tests are skipped automatically when the models are not present.
 """
 import os
 
 import pytest
 
-DET_DIR = os.environ.get("PPOCR_TEST_DET_DIR",
-                         r"D:\models\PP-OCRv6\PP-OCRv6_tiny_det_onnx")
-REC_DIR = os.environ.get("PPOCR_TEST_REC_DIR",
-                         r"D:\models\PP-OCRv6\PP-OCRv6_tiny_rec_onnx")
+from ppocrv6_min.paths import BUNDLED_DET_DIR, BUNDLED_REC_DIR
+
+DET_DIR = os.environ.get("PPOCR_TEST_DET_DIR", BUNDLED_DET_DIR)
+REC_DIR = os.environ.get("PPOCR_TEST_REC_DIR", BUNDLED_REC_DIR)
 IMAGE = os.environ.get("PPOCR_TEST_IMAGE", r"D:\code\zmxy\教师节.png")
 
 
