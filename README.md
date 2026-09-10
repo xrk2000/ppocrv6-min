@@ -1,51 +1,48 @@
 # ppocrv6-min
 
-**PP-OCRv6 (tiny det + tiny rec) 的最小推理环境** — 只用 4 个 pip 包，
-不依赖 PaddlePaddle / PaddleOCR / torch。
+**PP-OCRv6 (tiny det + tiny rec) 的最小推理环境** — 只用 3 个 npm 包，
+不依赖 PaddlePaddle / PaddleOCR / OpenCV / Python。
 
 [PP-OCRv6](https://github.com/PaddlePaddle/PaddleOCR) 是 PaddlePaddle 的轻量
 OCR 系列（1.5M–34.5M 参数，支持 49+ 语言）。本项目把其中 `tiny` 档的检测
-（DB）与识别（CTC）ONNX 模型封装成零框架依赖的 Python 库：
+（DB）与识别（CTC）ONNX 模型封装成零框架依赖的 Node.js 库：
 
 ```
-numpy + onnxruntime + opencv-python + pyclipper
+onnxruntime-node + pngjs + jpeg-js
 ```
 
-实测（CPU, Windows）：362×215 截图 6 行中文全图识别 ~0.5 s，其中
-det 9 ms、rec 1–2 ms/行，识别结果全部正确（置信度 0.96–0.999）。
+实测（CPU, Windows）：362×215 截图 6 行中文全图识别 ~100 ms，其中
+det ~60 ms、rec 3-5 ms/行，识别结果全部正确（置信度 0.96–0.998）。
 
 ## 特性
 
-- **4 个依赖**：无需 PaddlePaddle、PaddleOCR、Pillow、shapely、ultralytics
+- **3 个依赖**：无需 PaddlePaddle、PaddleOCR、OpenCV、Python
 - **后处理与 PaddleOCR 官方逐行对齐**：DB `minAreaRect` 打分 +
-  `pyclipper` unclip（`distance = area·ratio/length`），CTC 贪心解码
+  miter offset unclip（`distance = area·ratio/length`），CTC 贪心解码
 - **参数可配**：`box_thresh`、`limit_side_len`、onnxruntime providers（可换 GPU）
 - **中文字典自动解析**：直接从模型目录 `inference.yml` 的 `character_dict`
   读取（6904 字符，无需单独 dict 文件，无 YAML 库）
-- **中文路径支持**：`np.fromfile + cv2.imdecode`，Windows 下中文文件名无问题
 - **CLI**：`ppocrv6-min img.png --json out.json`
 
 ## 安装
 
 ```bash
-pip install .            # 从本目录安装
-# 或
-pip install -e .[test]   # 开发 + 测试
+npm install ppocrv6-min   # 从 npm 安装
+npm install .             # 或从本目录安装（开发用）
 ```
 
-依赖（Python 3.9–3.13）：
+依赖（Node.js >= 18）：
 
 | 包 | 版本 |
 |---|---|
-| numpy | >=1.24 |
-| onnxruntime | >=1.16（GPU 用 `onnxruntime-gpu`） |
-| opencv-python | >=4.8 |
-| pyclipper | >=1.3 |
+| onnxruntime-node | >=1.23.0（GPU 用 onnxruntime-node-gpu） |
+| pngjs | >=7.0.0 |
+| jpeg-js | >=0.4.4 |
 
 ## 模型
 
 **`tiny` 档模型已随包内置**（det ~1.7 MB + rec ~4.4 MB，位于
-`src/ppocrv6_min/models/`），`pip install` 之后**开箱即用，无需下载任何权重**。
+`models/`），`npm install` 之后**开箱即用，无需下载任何权重**。
 
 来源（Apache-2.0，如需换档位从这里下载）：
 
@@ -60,38 +57,43 @@ export PPOCR_DET_DIR=/path/to/PP-OCRv6_small_det_onnx
 export PPOCR_REC_DIR=/path/to/PP-OCRv6_small_rec_onnx
 ```
 
-> 模型目录里的 `inference.json` 是 Paddle PIR 格式权重，onnxruntime 用不到，
-> 未打包。rec 的 `inference.yml` 含字符字典，**必须保留**（已打包）。
-
 ## 用法
 
-### Python API
+### JavaScript API
 
-```python
-from ppocrv6_min import OCR
+```javascript
+import { OCR } from "ppocrv6-min";
 
-ocr = OCR()            # 默认用内置 tiny det + rec
-items = ocr.predict("截图.png")        # 路径或 BGR ndarray 均可
-for it in items:
-    print(it.box, f"{it.score:.3f}", it.text)
+const ocr = await new OCR().init();      // 加载 ONNX 会话（一次）
+const items = await ocr.predict("截图.png");
+for (const it of items) {
+  console.log(it.box, it.score.toFixed(3), it.text);
+}
 ```
 
 `TextItem` 字段：`text`（识别文本）、`score`（识别置信度）、
-`box`（轴对齐框 `(x0,y0,x1,y1)`）、`quad`（四点框，原图坐标）。
+`box`（轴对齐框 `[x0,y0,x1,y1]`）、`quad`（四点框，原图坐标）。
 
 单模块使用：
 
-```python
-from ppocrv6_min import DetModel, RecModel
-from ppocrv6_min.io import imread_unicode
-from ppocrv6_min.pipeline import warp_quad
+```javascript
+import { DetModel, RecModel, imread, toRgb, warpQuad } from "ppocrv6-min";
 
-det = DetModel(det_dir)
-rec = RecModel(rec_dir)
-img = imread_unicode("a.png")          # BGR
-for quad, score in det.detect(img):
-    strip = warp_quad(img[:, :, ::-1], quad)   # 透视矫正成水平条带 (RGB)
-    text, rec_score, _dt, _sz = rec.predict_line(strip)
+const det = new DetModel(detDir);
+await det.init();
+
+const rec = new RecModel(recDir);
+await rec.init();
+
+const img = imread("a.png"); // BGR
+const quadsScores = await det.detect(img);
+
+const imgRgb = toRgb(img);
+for (const { quad } of quadsScores) {
+  const strip = warpQuad(imgRgb, quad);
+  const { text, score } = await rec.predictLine(strip);
+  console.log(text, score);
+}
 ```
 
 ### CLI
@@ -103,59 +105,61 @@ ppocrv6-min --box-thresh 0.3 --json out.json a.png b.png
 ppocrv6-min --limit-side 736 photo.jpg     # 小图提速
 ```
 
-## 运行测试
+> 本包是纯 ESM（`"type": "module"`）：请用 `import`，CommonJS 的 `require`
+> 不支持。
+
+## 测试
 
 ```bash
-pytest
+npm test
 ```
 
-单元测试（字典解析、unclip、四点排序、warp）无需模型文件；集成测试需要
-真实 ONNX 模型，模型不存在时自动 skip。可用环境变量指向模型：
+零测试框架依赖（`node tests/run_tests.mjs`）。单元测试（字典解析、unclip、
+四点排序、warp、cv 原语、PNG 读写）不需要模型文件；集成测试使用内置 tiny
+模型 + `tests/data/sample.png`（一行中文"木灵葫芦"），模型缺失时自动跳过。
+可用环境变量指向其他模型/图片：
 
 ```bash
-PPOCR_TEST_DET_DIR=... PPOCR_TEST_REC_DIR=... PPOCR_TEST_IMAGE=... pytest
+PPOCR_TEST_DET_DIR=... PPOCR_TEST_REC_DIR=... PPOCR_TEST_IMAGE=... npm test
 ```
 
 ## 项目结构
 
 ```
-ppocrv6-min/
-├── pyproject.toml            # 打包 + 依赖 + 包数据(内置模型) + CLI 入口
-├── src/ppocrv6_min/
-│   ├── __init__.py           # 导出 OCR / DetModel / RecModel / 路径常量
-│   ├── io.py                 # 中文路径安全的 imread/imwrite
-│   ├── paths.py              # 内置模型目录解析（env 覆盖）
-│   ├── det.py                # DB 检测（官方后处理 + pyclipper unclip）
-│   ├── rec.py                # CTC 识别（字典解析 + 预处理 + 解码）
-│   ├── pipeline.py           # OCR = det → warp → rec
-│   ├── cli.py                # ppocrv6-min 命令行
-│   └── models/               # ★ 内置 tiny 模型（随 pip 分发）
-│       ├── PP-OCRv6_tiny_det_onnx/   inference.onnx + inference.yml
-│       └── PP-OCRv6_tiny_rec_onnx/   inference.onnx + inference.yml
+ppocrv6-min-node/
+├── package.json            # 打包 + 依赖 + CLI 入口（files: src + models）
+├── src/
+│   ├── index.js            # 主导出（OCR, DetModel, RecModel, 常量）
+│   ├── io.js              # 图像解码（PNG/JPEG -> BGR/RGB）
+│   ├── paths.js           # 内置模型目录解析（env 覆盖）
+│   ├── det.js             # DB 检测（官方后处理 + miter offset unclip）
+│   ├── rec.js             # CTC 识别（字典解析 + 预处理 + 解码）
+│   ├── pipeline.js        # OCR = det → warp → rec
+│   ├── cli.js             # ppocrv6-min 命令行
+│   └── cv.js              # OpenCV 风格操作（resize, contours, 几何, warp）
+├── models/                # ★ 内置 tiny 模型（随 npm 分发）
+│   ├── PP-OCRv6_tiny_det_onnx/   inference.onnx + inference.yml
+│   └── PP-OCRv6_tiny_rec_onnx/   inference.onnx + inference.yml
 ├── tests/
-│   ├── conftest.py           # 模型路径定位 + skip 逻辑
-│   ├── test_units.py         # 无模型依赖的单测
-│   └── test_integration.py   # 内置模型端到端（可 skip）
+│   ├── run_tests.mjs      # 零依赖测试运行器（npm test）
+│   ├── units.mjs          # 无模型依赖的单测
+│   ├── integration.mjs    # 内置模型端到端（可 skip）
+│   └── data/sample.png    # 集成测试用单行中文图
+├── tools/                 # 本地调试/对拍脚本（不进 npm 包，路径需本地修改）
 ├── README.md
-└── LICENSE                   # Apache-2.0
+└── LICENSE                # Apache-2.0
 ```
 
 ## 实现要点（踩坑记录）
 
-1. **rec 的 ONNX 输出已是 softmax 概率**（行和 = 1），不能再做第二次
-   softmax，否则置信度被压成 ~0.0004。
-2. **unclip 必须用官方算法**：先对 `minAreaRect` 在概率图上 `fillPoly`
-   打分，过 `box_thresh` 后再用 pyclipper 外扩。用 `cv2.distanceTransform`
-   近似是错的（cv2 只能算 0 像素到最近 1 像素的距离，方向与 DB 需要的
-   文字像素膨胀相反）。
-3. **`cv2.imread` 在 Windows 读不了中文路径**，用 `np.fromfile + cv2.imdecode`。
-4. det 框分数异常低（<0.1）时，先检查是否在**缩放后**的 prob 图上用了
-   **原图坐标**采样（坐标空间不一致）。
-5. rec 输入是"单行文字条带"：整图直接喂只会得到低置信乱码，必须先 det 切行。
-6. 四点框排序用 sum/diff 角点法得到 tl/tr/br/bl；条带高度 <8 px 时放大到
-   8 px，避免识别崩坏。
-7. yml 里的 YAML 引号字符（`''''` = 单引号、`'"'` = 双引号）只需剥掉外层
-   一对引号，无需完整 YAML 解析器。
+1. **rec 的 ONNX 输出已是 softmax 概率**（行和 = 1），不能做第二次 softmax
+2. **unclip 使用 miter offset**：对于 minAreaRect 的矩形框，miter offset 等价于 pyclipper 的 JT_ROUND offset（矩形外扩后 minAreaRect 相同）
+3. **findContours 使用连通分量 + 边界追踪**：避免了 Suzuki-Abe 复杂实现的边界情况，结果更稳定
+4. **orderQuad 的 diff 计算**：应该是 `y - x`（即 `np.diff(pts, axis=1)[:, 0]`），错误地用 `x - y` 会导致四边形排序错误（造成奇异矩阵）
+5. **resize 双线性插值**：使用 OpenCV 的中心对齐公式 `dst = (src + 0.5) * scale - 0.5`
+6. **warpPerspective 边界处理**：超出边界的像素采样为 0（BORDER_CONSTANT）
+7. **yml 引号字符解析**：`''''` → `'`, `'"'` → `"`（只需剥掉外层引号）
+8. **孔洞边界的扫描方向**：孔洞边界需逆时针扫描（与外边界相反），否则会产生重复轮廓
 
 ## 许可
 

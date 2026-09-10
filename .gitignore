@@ -1,23 +1,14 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-build/
+# Dependencies
+node_modules/
+
+# Build / packaging output
 dist/
-.eggs/
+*.tgz
 
-# Environments
-.env
-.venv/
-venv/
-
-# Testing / tooling
-.pytest_cache/
-.coverage
-htmlcov/
-.mypy_cache/
-.ruff_cache/
+# Node tooling caches
+.npm/
+.yarn/
+.eslintcache
 
 # Editors / OS
 .vscode/
@@ -26,16 +17,18 @@ htmlcov/
 Thumbs.db
 
 # Local model weights (large; download separately) — but NOT the tiny models
-# bundled inside the package (see exception below).
+# bundled inside the package under models/.
 /*.onnx
 /*.pt
 /*.paddle
-/models/
 /PP-OCRv6*/
-# keep the bundled tiny det/rec models in the repo
-!src/ppocrv6_min/models/
-!src/ppocrv6_min/models/**/
+!models/
+!models/**/
 
-# OCR outputs
+# OCR / debug outputs
 /output/
 /out.json
+/*.npy
+/*_det_ref.json
+/python_ref.json
+/test_output.json

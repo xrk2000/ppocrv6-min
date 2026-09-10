@@ -1,0 +1,46 @@
+{
+  "name": "ppocrv6-min",
+  "version": "0.1.0",
+  "description": "Minimal-dependency PP-OCRv6 (tiny det + tiny rec) inference with ONNX Runtime for Node.js — no PaddlePaddle / PaddleOCR / OpenCV / Python required.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./cli": "./src/cli.js"
+  },
+  "bin": {
+    "ppocrv6-min": "src/cli.js"
+  },
+  "files": [
+    "src",
+    "models"
+  ],
+  "scripts": {
+    "test": "node test/run_tests.mjs",
+    "ocr": "node src/cli.js"
+  },
+  "keywords": [
+    "ocr",
+    "paddleocr",
+    "pp-ocrv6",
+    "onnxruntime",
+    "text-detection",
+    "text-recognition",
+    "nodejs"
+  ],
+  "license": "Apache-2.0",
+  "author": "xrk2000",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xrk2000/ppocrv6-min.git"
+  },
+  "homepage": "https://github.com/xrk2000/ppocrv6-min#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "jpeg-js": "^0.4.4",
+    "onnxruntime-node": "^1.23.0",
+    "pngjs": "^7.0.0"
+  }
+}
