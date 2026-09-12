@@ -9,7 +9,7 @@ description = "Minimal-dependency PP-OCRv6 (tiny det + tiny rec) inference with 
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache-2.0" }
-authors = [{ name = "zmxy" }]
+authors = [{ name = "Roderick" }]
 keywords = ["ocr", "paddleocr", "pp-ocrv6", "onnxruntime", "text-detection", "text-recognition"]
 classifiers = [
     "Programming Language :: Python :: 3",
